@@ -48,7 +48,7 @@ class _LoginState extends State<Login> {
                         Icon(
                           Icons.lock,
                           size: screenWidth * 0.2,
-                          color: Colors.red[300],
+                          color: Color(0xFF52575D),
                         ),
                         SizedBox(height: screenHeight * 0.03),
 

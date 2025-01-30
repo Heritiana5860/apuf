@@ -24,7 +24,7 @@ class ButtonWidget extends StatelessWidget {
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.red[300],
+            color: Color(0xFF52575D),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -49,43 +49,3 @@ class ButtonWidget extends StatelessWidget {
     );
   }
 }
-
-// import 'package:app/components/text.dart';
-// import 'package:flutter/material.dart';
-
-// class ButtonWidget extends StatelessWidget {
-//   final String text;
-//   final String? scaffoldMessengerText;
-//   final OutlinedBorder? shape;
-//   const ButtonWidget({
-//     super.key,
-//     required GlobalKey formKey,
-//     required this.text,
-//     this.shape,
-//     this.scaffoldMessengerText,
-//   }) : _formKey = formKey;
-//   final GlobalKey _formKey;
-//   @override
-//   Widget build(BuildContext context) {
-//     return ElevatedButton(
-//       onPressed: () {
-//         if (_formKey.currentState!.validate()) {
-//           // Ajoutez ici la logique de connexion
-//           ScaffoldMessenger.of(context).showSnackBar(
-//             SnackBar(content: Text(scaffoldMessengerText!)),
-//           );
-//         }
-//       },
-//       style: ElevatedButton.styleFrom(
-//         padding: EdgeInsets.symmetric(horizontal: 100, vertical: 15),
-//         shape: shape,
-//         backgroundColor: Colors.red[300],
-//       ),
-//       child: TextWidget(
-//         label: text,
-//         color: Colors.white,
-//         fontSize: 20,
-//       ),
-//     );
-//   }
-// }
