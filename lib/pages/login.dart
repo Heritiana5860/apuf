@@ -1,7 +1,9 @@
 import 'package:app/components/button.dart';
 import 'package:app/components/field.dart';
 import 'package:app/components/text.dart';
+import 'package:app/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -14,6 +16,54 @@ class _LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  late final AuthService _authService;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = AuthService(Supabase.instance.client);
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signIn() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _authService.signInWithEmail(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+    } catch (error) {
+      if (mounted) {
+        debugPrint(error.toString());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            
+            content: TextWidget(label: "Compte invalide!",),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +123,7 @@ class _LoginState extends State<Login> {
                             icon: Icons.email,
                             labelText: "Email",
                             obscureText: false,
+                            keyboardType: TextInputType.emailAddress,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Veuillez entrer votre email';
@@ -112,20 +163,14 @@ class _LoginState extends State<Login> {
                         SizedBox(height: screenHeight * 0.03),
 
                         // Bouton de connexion
-                        ButtonWidget(
-                          screenWidth: screenWidth,
-                          label: "Se connecter",
-                          formKey: _formKey,
-                          onTap: () {
-                            if (_formKey.currentState!.validate()) {
-                              Navigator.pushNamed(context, '/home');
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text("Connexion en cours...")),
-                              );
-                            }
-                          },
-                        ),
+                        _isLoading
+                            ? const CircularProgressIndicator()
+                            : ButtonWidget(
+                                screenWidth: screenWidth,
+                                label: "Se connecter",
+                                formKey: _formKey,
+                                onTap: _isLoading ? null : _signIn,
+                              ),
 
                         SizedBox(height: screenHeight * 0.02),
 
@@ -153,12 +198,5 @@ class _LoginState extends State<Login> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 }

@@ -8,12 +8,11 @@ class ButtonWidget extends StatelessWidget {
     required this.label,
      required GlobalKey formKey,
     this.onTap
-  }) : _formKey = formKey;
+  });
 
   final double screenWidth;
   final String label;
   final void Function()? onTap;
-    final GlobalKey _formKey;
 
   @override
   Widget build(BuildContext context) {

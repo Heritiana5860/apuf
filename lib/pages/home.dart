@@ -39,6 +39,7 @@ class _HomeState extends State<Home> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
         backgroundColor: Color(0xFF52575D),
         foregroundColor: Colors.white,
@@ -46,11 +47,6 @@ class _HomeState extends State<Home> {
       ),
       drawer: DrawerWidget(onSelectPage: _selectPage),
       body: body,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Color(0xFF52575D),
-        onPressed: () {},
-        child: const Icon(Icons.add, color: Colors.white, size: 25),
-      ),
     );
   }
 }

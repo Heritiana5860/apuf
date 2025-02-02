@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1082611467172",
+    "project_id": "apkapuf",
+    "storage_bucket": "apkapuf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082611467172:android:73ab72095b2938a297b731",
+        "android_client_info": {
+          "package_name": "com.example.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6zagaCgMadzw3Ht4PySsfQvOWPPZH3wM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
