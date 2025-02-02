@@ -8,17 +8,18 @@ class FieldWidget extends StatelessWidget {
   final bool obscureText;
   final TextInputType? keyboardType;
   final Widget? suffixIcon;
+  final void Function(String)? onChanged;
 
-  const FieldWidget({
-    super.key,
-    this.controller,
-    this.labelText,
-    this.icon,
-    required this.obscureText,
-    this.validator,
-    this.keyboardType,
-    this.suffixIcon,
-  });
+  const FieldWidget(
+      {super.key,
+      this.controller,
+      this.labelText,
+      this.icon,
+      required this.obscureText,
+      this.validator,
+      this.keyboardType,
+      this.suffixIcon,
+      this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +29,7 @@ class FieldWidget extends StatelessWidget {
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
+        onChanged: onChanged,
         decoration: InputDecoration(
           labelText: labelText,
           labelStyle: TextStyle(
