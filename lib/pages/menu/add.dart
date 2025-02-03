@@ -12,7 +12,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddMember extends StatefulWidget {
-  const AddMember({super.key});
+  const AddMember({super.key, this.memberToEdit});
+
+  final Map<String, dynamic>? memberToEdit;
 
   @override
   State<AddMember> createState() => _AddMemberState();
@@ -418,21 +420,22 @@ class _AddMemberState extends State<AddMember> {
 
         // Bouton d'ajout
         floatingActionButton: FloatingActionButton(
-          //backgroundColor: const Color(0xFF52575D),
           backgroundColor: isFormFilled ? const Color(0xFF52575D) : Colors.grey,
           onPressed: isFormFilled
               ? () {
                   if (_formKey.currentState!.validate()) {
                     saveUserData();
-                    // Logique pour ajouter un membre
+
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Membre ajouté avec succès!')),
+                      SnackBar(
+                        content: Text('Membre ajouté avec succès!'),
+                        backgroundColor: Colors.green,
+                      ),
                     );
                   }
                 }
               : null,
-          child: const Icon(Icons.add, color: Colors.white, size: 25),
+          child: Icon(Icons.add, color: Colors.white, size: 25),
         ),
       ),
     );

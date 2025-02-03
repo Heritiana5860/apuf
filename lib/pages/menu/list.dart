@@ -19,7 +19,7 @@ class _DisplayState extends State<Display> {
       final supabase = Supabase.instance.client;
       final response = await supabase
           .from('users')
-          .select('prenom, nom, email, profile_image_url');
+          .select('prenom, nom, telephone, profile_image_url');
       final fetchedUsers = List<Map<String, dynamic>>.from(response);
 
       // Assurez-vous que tous les utilisateurs ont des URL d'image valides
@@ -36,18 +36,47 @@ class _DisplayState extends State<Display> {
 
       setState(() {
         users = processedUsers;
-        filteredUsers =
-            processedUsers; // Initialisation des utilisateurs filtrés
+        filteredUsers = processedUsers;
       });
     } catch (error) {
       debugPrint('Error fetching users: $error');
     }
   }
 
+  Future<void> deleteUser(String telephone) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Delete the user from the database
+      await supabase.from('users').delete().eq('telephone', telephone);
+
+      // Remove the user from local state
+      setState(() {
+        users.removeWhere((user) => user['telephone'] == telephone);
+        filteredUsers.removeWhere((user) => user['telephone'] == telephone);
+      });
+
+      // Optional: Show a success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Utilisateur supprimé avec succès')),
+      );
+    } catch (error) {
+      debugPrint('Error deleting user: $error');
+
+      // Show an error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la suppression de l\'utilisateur'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void filterUsers(String query) {
     setState(() {
       if (query.isEmpty) {
-        filteredUsers = users; // Réinitialise la liste si la recherche est vide
+        filteredUsers = users;
       } else {
         filteredUsers = users.where((user) {
           final prenom = user['prenom']?.toString().toLowerCase() ?? '';
@@ -62,7 +91,7 @@ class _DisplayState extends State<Display> {
   @override
   void initState() {
     super.initState();
-    fetchUsers(); // Récupérer les utilisateurs au démarrage
+    fetchUsers();
   }
 
   @override
@@ -83,15 +112,14 @@ class _DisplayState extends State<Display> {
             controller: searchController,
             labelText: "Rechercher un membre...",
             onChanged: (value) {
-              filterUsers(value); // Appliquer le filtre à chaque modification
+              filterUsers(value);
             },
           ),
         ),
         Expanded(
           child: Center(
             child: users.isEmpty
-                ? const Center(
-                    child: CircularProgressIndicator()) // Chargement initial
+                ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     itemCount: filteredUsers.length,
                     itemBuilder: (context, index) {
@@ -109,7 +137,36 @@ class _DisplayState extends State<Display> {
                             ),
                             const SizedBox(width: 1),
                             IconButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      shape: ContinuousRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(4)),
+                                      title: Text('Confirmer la suppression'),
+                                      content: Text(
+                                          'Voulez-vous vraiment supprimer cet utilisateur ?'),
+                                      actions: [
+                                        TextButton(
+                                          child: Text('Annuler'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        TextButton(
+                                          child: Text('Supprimer'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                            deleteUser(user['telephone']);
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
                               icon: Icon(
                                 Icons.delete,
                                 color: Colors.red[300],
@@ -146,7 +203,7 @@ class _DisplayState extends State<Display> {
                           ),
                         ),
                         title: Text('${user['prenom']} ${user['nom']}'),
-                        subtitle: Text(user['email']),
+                        subtitle: Text(user['telephone']),
                       );
                     },
                   ),
