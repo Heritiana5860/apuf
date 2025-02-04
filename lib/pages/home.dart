@@ -17,21 +17,34 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   var currentPage = DrawerSelections.addMember;
+  Map<String, dynamic>? memberToEdit;
 
   void _selectPage(DrawerSelections selection) {
     setState(() {
       currentPage = selection;
+      memberToEdit = null;
     });
     Navigator.of(context).pop(); 
+  }
+
+  void _editMember(Map<String, dynamic> member) {
+    setState(() {
+      currentPage = DrawerSelections.addMember;
+      memberToEdit = member; 
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     Widget body = Container();
     if (currentPage == DrawerSelections.addMember) {
-      body = AddMember();
+      body = AddMember(memberToEdit: memberToEdit, onSave: () {
+        setState(() {
+          memberToEdit = null; // Reset after saving
+        });
+      });
     } else if (currentPage == DrawerSelections.display) {
-      body = Display();
+      body = Display(onEdit: _editMember);
     } else if (currentPage == DrawerSelections.help) {
       body = Help();
     } else if (currentPage == DrawerSelections.setting) {

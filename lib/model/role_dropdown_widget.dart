@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 class RoleDropdownWidget extends StatefulWidget {
   final Function(String?) onCategorySelected;
+  final String? initialValue;
 
   const RoleDropdownWidget({
     super.key,
     required this.onCategorySelected,
+    this.initialValue,
   });
 
   @override
@@ -15,6 +17,24 @@ class RoleDropdownWidget extends StatefulWidget {
 class _RoleDropdownWidgetState extends State<RoleDropdownWidget> {
   String? selectedCategory;
   List<String> categories = ["Birao", "Komity", "Kristianina"];
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with the provided value
+    selectedCategory = widget.initialValue;
+  }
+
+  @override
+  void didUpdateWidget(RoleDropdownWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update value if initialValue changes
+    if (widget.initialValue != oldWidget.initialValue) {
+      setState(() {
+        selectedCategory = widget.initialValue;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +71,7 @@ class _RoleDropdownWidgetState extends State<RoleDropdownWidget> {
         hint: const Text("Sélectionnez une catégorie"),
         icon: const Icon(Icons.arrow_drop_down),
         style: TextStyle(color: Colors.grey[600]!),
+        isExpanded: true,
         onChanged: (String? newValue) {
           setState(() {
             selectedCategory = newValue;

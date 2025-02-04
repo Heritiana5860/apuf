@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 
 class SubRoleDropdownWidget extends StatefulWidget {
   final String? selectedCategory;
+  final String? initialValue;
+  final Function(String?)? onRoleSelected;
 
   const SubRoleDropdownWidget({
     super.key,
     required this.selectedCategory,
+    this.initialValue,
+    this.onRoleSelected,
   });
 
   @override
@@ -39,12 +43,38 @@ class _SubRoleDropdownWidgetState extends State<SubRoleDropdownWidget> {
   };
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize with the provided value if it exists in the current category's roles
+    if (widget.initialValue != null && widget.selectedCategory != null) {
+      final roles = roleMap[widget.selectedCategory] ?? [];
+      if (roles.contains(widget.initialValue)) {
+        selectedRole = widget.initialValue;
+      }
+    }
+  }
+
+  @override
   void didUpdateWidget(SubRoleDropdownWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // Handle category changes
     if (widget.selectedCategory != oldWidget.selectedCategory) {
       setState(() {
+        // Clear selection when category changes
         selectedRole = null;
       });
+    }
+
+    // Handle initialValue changes
+    if (widget.initialValue != oldWidget.initialValue &&
+        widget.selectedCategory != null) {
+      final roles = roleMap[widget.selectedCategory] ?? [];
+      if (roles.contains(widget.initialValue)) {
+        setState(() {
+          selectedRole = widget.initialValue;
+        });
+      }
     }
   }
 
@@ -87,12 +117,15 @@ class _SubRoleDropdownWidgetState extends State<SubRoleDropdownWidget> {
         hint: const Text("Sélectionnez un rôle"),
         icon: const Icon(Icons.arrow_drop_down),
         style: TextStyle(color: Colors.grey[600]!),
+        isExpanded: true,
         onChanged: widget.selectedCategory == null
             ? null
             : (String? newValue) {
                 setState(() {
                   selectedRole = newValue;
                 });
+                // Call the callback when role changes
+                widget.onRoleSelected?.call(newValue);
               },
         items: roles.map<DropdownMenuItem<String>>((String value) {
           return DropdownMenuItem<String>(

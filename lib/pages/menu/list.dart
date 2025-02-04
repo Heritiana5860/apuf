@@ -1,9 +1,12 @@
 import 'package:app/components/field.dart';
+import 'package:app/pages/menu/add.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Display extends StatefulWidget {
-  const Display({super.key});
+  const Display({super.key, required this.onEdit});
+
+  final Function(Map<String, dynamic>) onEdit;
 
   @override
   State<Display> createState() => _DisplayState();
@@ -17,74 +20,62 @@ class _DisplayState extends State<Display> {
   Future<void> fetchUsers() async {
     try {
       final supabase = Supabase.instance.client;
-      final response = await supabase
-          .from('users')
-          .select('prenom, nom, telephone, profile_image_url');
+      final response = await supabase.from('users').select();
       final fetchedUsers = List<Map<String, dynamic>>.from(response);
 
-      // Assurez-vous que tous les utilisateurs ont des URL d'image valides
-      final processedUsers = fetchedUsers.map((user) {
-        if (user['profile_image_url'] == null ||
-            user['profile_image_url'].isEmpty) {
-          return {
-            ...user,
-            'profile_image_url': null,
-          };
-        }
-        return user;
-      }).toList();
-
       setState(() {
-        users = processedUsers;
-        filteredUsers = processedUsers;
+        users = fetchedUsers;
+        filteredUsers = fetchedUsers;
       });
     } catch (error) {
       debugPrint('Error fetching users: $error');
     }
   }
 
-  Future<void> deleteUser(String telephone) async {
+  Future<void> deleteUser(String telephone, String? imageUrl) async {
     try {
-      final supabase = Supabase.instance.client;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Suppresion en cours...')),
+        );
+      }
 
-      // Delete the user from the database
+      final supabase = Supabase.instance.client;
+      // delete textual data
       await supabase.from('users').delete().eq('telephone', telephone);
 
-      // Remove the user from local state
-      setState(() {
-        users.removeWhere((user) => user['telephone'] == telephone);
-        filteredUsers.removeWhere((user) => user['telephone'] == telephone);
-      });
+      // delete image
+      final imagePath = imageUrl!.split("/").last;
+      debugPrint('imagePath: $imagePath');
+      await supabase.storage.from('images').remove([imagePath]);
 
-      // Optional: Show a success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Utilisateur supprimé avec succès')),
-      );
-    } catch (error) {
-      debugPrint('Error deleting user: $error');
+      fetchUsers();
 
-      // Show an error message
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la suppression de l\'utilisateur'),
-          backgroundColor: Colors.red,
+        const SnackBar(
+          content: Text('Membre supprimé avec succès!'),
+          backgroundColor: Colors.green,
         ),
       );
+    } catch (e) {
+      debugPrint('Error delete: $e');
     }
   }
 
   void filterUsers(String query) {
     setState(() {
-      if (query.isEmpty) {
-        filteredUsers = users;
-      } else {
-        filteredUsers = users.where((user) {
-          final prenom = user['prenom']?.toString().toLowerCase() ?? '';
-          final nom = user['nom']?.toString().toLowerCase() ?? '';
-          final queryLower = query.toLowerCase();
-          return prenom.contains(queryLower) || nom.contains(queryLower);
-        }).toList();
-      }
+      filteredUsers = users.where((user) {
+        final prenom = user['prenom']?.toString().toLowerCase() ?? '';
+        final nom = user['nom']?.toString().toLowerCase() ?? '';
+        final numero = user["telephone"] ?? '';
+        final mention = user["mention"]?.toString().toLowerCase() ?? '';
+        final quartier = user["quartier"]?.toString().toLowerCase() ?? '';
+        return prenom.contains(query.toLowerCase()) ||
+            nom.contains(query.toLowerCase()) ||
+            numero.contains(query) ||
+            mention.contains(query.toLowerCase()) ||
+            quartier.contains(query.toLowerCase());
+      }).toList();
     });
   }
 
@@ -111,103 +102,98 @@ class _DisplayState extends State<Display> {
             icon: Icons.search,
             controller: searchController,
             labelText: "Rechercher un membre...",
-            onChanged: (value) {
-              filterUsers(value);
-            },
+            onChanged: filterUsers,
           ),
         ),
         Expanded(
-          child: Center(
-            child: users.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    itemCount: filteredUsers.length,
-                    itemBuilder: (context, index) {
-                      final user = filteredUsers[index];
-                      return ListTile(
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: () {},
-                              icon: Icon(
-                                Icons.edit,
-                                color: Colors.blue[300],
-                              ),
+          child: users.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.builder(
+                  itemCount: filteredUsers.length,
+                  itemBuilder: (context, index) {
+                    final user = filteredUsers[index];
+                    return ListTile(
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              widget.onEdit(user);
+                            },
+                            icon: Icon(
+                              Icons.edit,
+                              color: Colors.blue[300],
                             ),
-                            const SizedBox(width: 1),
-                            IconButton(
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      shape: ContinuousRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(4)),
-                                      title: Text('Confirmer la suppression'),
-                                      content: Text(
-                                          'Voulez-vous vraiment supprimer cet utilisateur ?'),
-                                      actions: [
-                                        TextButton(
-                                          child: Text('Annuler'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                        TextButton(
-                                          child: Text('Supprimer'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                            deleteUser(user['telephone']);
-                                          },
-                                        ),
-                                      ],
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Text('Confirmer la suppression'),
+                                    content: Text(
+                                        'Voulez-vous vraiment supprimer cet utilisateur ?'),
+                                    actions: [
+                                      TextButton(
+                                        child: Text('Annuler'),
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                      TextButton(
+                                        child: Text('Supprimer'),
+                                        onPressed: () {
+                                          deleteUser(user['telephone'],
+                                              user['profile_image_url']);
+                                          Navigator.of(context).pop();
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            icon: Icon(
+                              Icons.delete,
+                              color: Colors.red[300],
+                            ),
+                          ),
+                        ],
+                      ),
+                      leading: ClipOval(
+                        child: SizedBox(
+                          width: 50,
+                          height: 50,
+                          child: user['profile_image_url'] != null
+                              ? Image.network(
+                                  user['profile_image_url'],
+                                  fit: BoxFit.cover,
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                        child: CircularProgressIndicator());
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.person),
                                     );
                                   },
-                                );
-                              },
-                              icon: Icon(
-                                Icons.delete,
-                                color: Colors.red[300],
-                              ),
-                            ),
-                          ],
+                                )
+                              : Container(
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.person),
+                                ),
                         ),
-                        leading: ClipOval(
-                          child: SizedBox(
-                            width: 50,
-                            height: 50,
-                            child: user['profile_image_url'] != null
-                                ? Image.network(
-                                    user['profile_image_url'],
-                                    fit: BoxFit.cover,
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return const Center(
-                                          child: CircularProgressIndicator());
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      debugPrint('Error loading image: $error');
-                                      return Container(
-                                        color: Colors.grey[300],
-                                        child: const Icon(Icons.person),
-                                      );
-                                    },
-                                  )
-                                : Container(
-                                    color: Colors.grey[300],
-                                    child: const Icon(Icons.person),
-                                  ),
-                          ),
-                        ),
-                        title: Text('${user['prenom']} ${user['nom']}'),
-                        subtitle: Text(user['telephone']),
-                      );
-                    },
-                  ),
-          ),
+                      ),
+                      title: Text('${user['nom']} ${user['prenom']}'),
+                      subtitle:
+                          Text("${user['telephone']} | ${user['adresse']}"),
+                    );
+                  },
+                ),
         ),
       ],
     );

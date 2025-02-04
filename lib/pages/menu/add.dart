@@ -8,13 +8,13 @@ import 'package:app/services/auth_state.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddMember extends StatefulWidget {
-  const AddMember({super.key, this.memberToEdit});
+  const AddMember({super.key, this.memberToEdit, this.onSave});
 
   final Map<String, dynamic>? memberToEdit;
+  final VoidCallback? onSave;
 
   @override
   State<AddMember> createState() => _AddMemberState();
@@ -25,6 +25,8 @@ class _AddMemberState extends State<AddMember> {
   final _formKey = GlobalKey<FormState>();
   String? selectedCategory;
   final supabase = Supabase.instance.client;
+  bool isEditing = false;
+  String? existingImageUrl;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -83,6 +85,16 @@ class _AddMemberState extends State<AddMember> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize controllers with existing data if editing
+    if (widget.memberToEdit != null) {
+      isEditing = true;
+      _initializeEditData();
+    }
+  }
+
+  @override
   void dispose() {
     // Dispose controllers
     nomController.dispose();
@@ -96,6 +108,43 @@ class _AddMemberState extends State<AddMember> {
     talentaController.dispose();
 
     super.dispose();
+  }
+
+  void _initializeEditData() {
+    final member = widget.memberToEdit!;
+    nomController.text = member['nom'] ?? '';
+    prenomController.text = member['prenom'] ?? '';
+    telephoneController.text = member['telephone'] ?? '';
+    emailController.text = member['email'] ?? '';
+    facebookController.text = member['facebook'] ?? '';
+    lieuController.text = member['lieu_de_naissance'] ?? '';
+    adresseController.text = member['adresse'] ?? '';
+    fiavianaController.text = member['fiaviana'] ?? '';
+    talentaController.text = member['talenta'] ?? '';
+
+    // Initialize dropdowns
+    setState(() {
+      selectedEtablissement = member['etablissement'];
+      selectedMention = member['mention'];
+      selectedNiveau = member['niveau'];
+      selectedQuartier = member['quartier'];
+      selectedSexe = member['sexe'];
+      selectedEglise = member['eglise'];
+      selectedMpandray = member['mpandray'];
+      selectedReception = member['reception'];
+      selectedSampana = member['sampana'];
+      selectedCategory = member['role'];
+      selectedCategory = member['role'];
+      existingImageUrl = member['profile_image_url'];
+    });
+
+    // Initialize dates
+    if (member['date_de_naissance'] != null) {
+      dateDeNaissance = DateTime.parse(member['date_de_naissance']);
+    }
+    if (member['date_entree'] != null) {
+      dateDentree = DateTime.parse(member['date_entree']);
+    }
   }
 
   @override
@@ -125,8 +174,29 @@ class _AddMemberState extends State<AddMember> {
                     child: _image != null
                         ? Image.file(_image!,
                             fit: BoxFit.cover, width: 130, height: 130)
-                        : Icon(Icons.add_a_photo_rounded,
-                            size: 50, color: Colors.grey[800]),
+                        : (existingImageUrl != null &&
+                                existingImageUrl!.isNotEmpty
+                            ? Image.network(
+                                existingImageUrl!,
+                                fit: BoxFit.cover,
+                                width: 130,
+                                height: 130,
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(
+                                      child: CircularProgressIndicator());
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey[200],
+                                    child: Icon(Icons.person,
+                                        size: 50, color: Colors.grey[800]),
+                                  );
+                                },
+                              )
+                            : Icon(Icons.add_a_photo_rounded,
+                                size: 50, color: Colors.grey[800])),
                   ),
                 ),
               ),
@@ -223,6 +293,7 @@ class _AddMemberState extends State<AddMember> {
                         dropdownLabel: 'Etablissement',
                         jsonFileOption: 'etablissement',
                         jsonFilePath: 'assets/json/etablissement.json',
+                        initialValue: selectedEtablissement,
                         onValueChanged: (value) {
                           setState(() {
                             selectedEtablissement = value;
@@ -239,6 +310,7 @@ class _AddMemberState extends State<AddMember> {
                               dropdownLabel: 'Mention',
                               jsonFileOption: 'mention',
                               jsonFilePath: 'assets/json/mention.json',
+                              initialValue: selectedMention,
                               onValueChanged: (value) {
                                 setState(() {
                                   selectedMention = value;
@@ -251,6 +323,7 @@ class _AddMemberState extends State<AddMember> {
                               dropdownLabel: 'Niveau',
                               jsonFileOption: 'niveau',
                               jsonFilePath: 'assets/json/niveau.json',
+                              initialValue: selectedNiveau,
                               onValueChanged: (value) {
                                 setState(() {
                                   selectedNiveau = value;
@@ -280,6 +353,7 @@ class _AddMemberState extends State<AddMember> {
                               dropdownLabel: 'Quartier',
                               jsonFileOption: 'quartier',
                               jsonFilePath: 'assets/json/quartier.json',
+                              initialValue: selectedQuartier,
                               onValueChanged: (value) {
                                 setState(() {
                                   selectedQuartier = value;
@@ -293,6 +367,7 @@ class _AddMemberState extends State<AddMember> {
                               dropdownLabel: "Sexe",
                               jsonFileOption: 'sexe',
                               jsonFilePath: 'assets/json/sexe.json',
+                              initialValue: selectedSexe,
                               onValueChanged: (value) {
                                 setState(() {
                                   selectedSexe = value;
@@ -321,6 +396,7 @@ class _AddMemberState extends State<AddMember> {
                               dropdownLabel: "Eglise",
                               jsonFileOption: 'eglise',
                               jsonFilePath: 'assets/json/eglise.json',
+                              initialValue: selectedEglise,
                               onValueChanged: (value) {
                                 setState(() {
                                   selectedEglise = value;
@@ -335,6 +411,7 @@ class _AddMemberState extends State<AddMember> {
                       Column(
                         children: [
                           RoleDropdownWidget(
+                            initialValue: selectedCategory,
                             onCategorySelected: (category) {
                               setState(() {
                                 selectedCategory = category;
@@ -366,6 +443,7 @@ class _AddMemberState extends State<AddMember> {
                               dropdownLabel: 'Mpandray',
                               jsonFileOption: 'mpandray',
                               jsonFilePath: 'assets/json/mpandray.json',
+                              initialValue: selectedMpandray,
                               onValueChanged: (value) {
                                 setState(() {
                                   selectedMpandray = value;
@@ -379,6 +457,7 @@ class _AddMemberState extends State<AddMember> {
                               dropdownLabel: 'Réception',
                               jsonFileOption: 'reception',
                               jsonFilePath: 'assets/json/reception.json',
+                              initialValue: selectedReception,
                               onValueChanged: (value) {
                                 setState(() {
                                   selectedReception = value;
@@ -394,6 +473,7 @@ class _AddMemberState extends State<AddMember> {
                         dropdownLabel: 'Sampana',
                         jsonFileOption: 'sampana',
                         jsonFilePath: 'assets/json/sampana.json',
+                        initialValue: selectedSampana,
                         onValueChanged: (value) {
                           setState(() {
                             selectedSampana = value;
@@ -425,150 +505,17 @@ class _AddMemberState extends State<AddMember> {
               ? () {
                   if (_formKey.currentState!.validate()) {
                     saveUserData();
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Membre ajouté avec succès!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
                   }
                 }
               : null,
-          child: Icon(Icons.add, color: Colors.white, size: 25),
+          child: Icon(
+            isEditing ? Icons.update : Icons.add,
+            color: Colors.white,
+            size: 25,
+          ),
         ),
       ),
     );
-  }
-
-  Future<String?> uploadImage(File imageFile, String userId) async {
-    try {
-      // Create a unique file name using user ID and timestamp
-      final fileExt = imageFile.path.split('.').last;
-      final fileName = 'profile_$userId.$fileExt';
-      final bucketName = 'images';
-
-      // Upload the image
-      await supabase.storage.from(bucketName).upload(
-            'profiles/$fileName', // Store in a 'profiles' folder for better organization
-            imageFile,
-            fileOptions: const FileOptions(
-              cacheControl: '3600',
-              upsert: false,
-            ),
-          );
-
-      // Get the public URL
-      final imageUrl =
-          supabase.storage.from(bucketName).getPublicUrl('profiles/$fileName');
-
-      return imageUrl;
-    } on StorageException catch (error) {
-      debugPrint('Storage error: ${error.message}');
-      rethrow;
-    } catch (error) {
-      debugPrint('Unexpected error during image upload: $error');
-      rethrow;
-    }
-  }
-
-  Future<void> saveUserData() async {
-    try {
-      if (!_formKey.currentState!.validate()) {
-        throw Exception('Form validation failed');
-      }
-
-      // Show loading indicator
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sauvegarde en cours...')),
-        );
-      }
-
-      // Generate a unique ID for the user
-      final userId = DateTime.now().millisecondsSinceEpoch.toString();
-      String? imageUrl;
-
-      // Upload image if exists
-      if (_image != null) {
-        imageUrl = await uploadImage(_image!, userId);
-      }
-
-      // Prepare member data
-      final member = MemberModel(
-        user_id: supabase.auth.currentUser!.id,
-        nom: nomController.text.trim(),
-        prenom: prenomController.text.trim(),
-        telephone: telephoneController.text.trim(),
-        email: emailController.text.trim(),
-        facebook: facebookController.text.trim(),
-        dateDeNaissance: dateDeNaissance,
-        lieuDeNaissance: lieuController.text.trim(),
-        adresse: adresseController.text.trim(),
-        dateEntree: dateDentree,
-        fiaviana: fiavianaController.text.trim(),
-        talenta: talentaController.text.trim(),
-        etablissement: selectedEtablissement,
-        mention: selectedMention,
-        niveau: selectedNiveau,
-        quartier: selectedQuartier,
-        sexe: selectedSexe,
-        eglise: selectedEglise,
-        role: selectedCategory,
-        mpandray: selectedMpandray,
-        reception: selectedReception,
-        sampana: selectedSampana,
-        profileImageUrl: imageUrl,
-      );
-
-      // Save to database using upsert
-      await supabase.from('users').upsert(member.toJson());
-
-      if (mounted) {
-        _resetForm();
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Membre ajouté avec succès!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Navigate back or clear form
-        //Navigator.of(context).pop();
-      }
-    } on PostgrestException catch (error) {
-      if (mounted) {
-        debugPrint('Erreur de base de données: ${error.message}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur de base de données'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } on StorageException catch (error) {
-      if (mounted) {
-        debugPrint('Erreur de stockage: ${error.message}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur de stockage'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (error) {
-      if (mounted) {
-        debugPrint('Erreur inattendue: $error');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur inattendue'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   void _resetForm() {
@@ -600,5 +547,135 @@ class _AddMemberState extends State<AddMember> {
       selectedSampana = null;
       selectedCategory = null;
     });
+  }
+
+  Future<String?> uploadImage(File imageFile, String userId) async {
+    try {
+      // Create a unique file name using user ID and timestamp
+      final fileExt = imageFile.path.split('.').last;
+      final fileName = '$userId.$fileExt';
+      final bucketName = 'images';
+
+      // Upload the image
+      await supabase.storage.from(bucketName).upload(
+            fileName,
+            imageFile,
+            fileOptions: const FileOptions(
+              cacheControl: '3600',
+              upsert: false,
+            ),
+          );
+
+      // Get the public URL
+      final imageUrl = supabase.storage.from(bucketName).getPublicUrl(fileName);
+
+      return imageUrl;
+    } on StorageException catch (error) {
+      debugPrint('Storage error: ${error.message}');
+      rethrow;
+    } catch (error) {
+      debugPrint('Unexpected error during image upload: $error');
+      rethrow;
+    }
+  }
+
+  Future<void> saveUserData() async {
+    try {
+      if (!_formKey.currentState!.validate()) {
+        throw Exception('Form validation failed');
+      }
+
+      // Show loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sauvegarde en cours...')),
+        );
+      }
+
+      String? imageUrl;
+
+      // Handle image upload for new image
+      if (_image != null) {
+        final userId = isEditing
+            ? widget.memberToEdit!['telephone']
+            : DateTime.now().millisecondsSinceEpoch.toString();
+        imageUrl = await uploadImage(_image!, userId);
+      } else if (isEditing) {
+        // Keep existing image URL if editing and no new image selected
+        imageUrl = widget.memberToEdit!['profile_image_url'];
+      }
+
+      // Prepare member data
+      final member = MemberModel(
+        user_id: supabase.auth.currentUser!.id,
+        nom: nomController.text.trim(),
+        prenom: prenomController.text.trim(),
+        telephone: telephoneController.text.trim(),
+        email: emailController.text.trim(),
+        facebook: facebookController.text.trim(),
+        dateDeNaissance: dateDeNaissance,
+        lieuDeNaissance: lieuController.text.trim(),
+        adresse: adresseController.text.trim(),
+        dateEntree: dateDentree,
+        fiaviana: fiavianaController.text.trim(),
+        talenta: talentaController.text.trim(),
+        etablissement: selectedEtablissement,
+        mention: selectedMention,
+        niveau: selectedNiveau,
+        quartier: selectedQuartier,
+        sexe: selectedSexe,
+        eglise: selectedEglise,
+        role: selectedCategory,
+        mpandray: selectedMpandray,
+        reception: selectedReception,
+        sampana: selectedSampana,
+        profileImageUrl: imageUrl,
+      );
+
+      if (isEditing) {
+        // Update existing record
+        await supabase
+            .from('users')
+            .update(member.toJson())
+            .eq('telephone', widget.memberToEdit!['telephone']);
+      } else {
+        // Insert new record
+        await supabase.from('users').insert(member.toJson());
+      }
+
+      if (mounted) {
+        _resetForm();
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isEditing
+                ? 'Membre modifié avec succès!'
+                : 'Membre ajouté avec succès!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Call the onSave callback
+        if (widget.onSave != null) {
+          widget.onSave!();
+        }
+
+        // Navigate back after editing
+        if (isEditing) {
+          Navigator.of(context).pop();
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        debugPrint('Erreur: $error');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Une erreur est survenue'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
