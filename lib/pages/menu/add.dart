@@ -29,6 +29,7 @@ class _AddMemberState extends State<AddMember> {
   final supabase = Supabase.instance.client;
   bool isEditing = false;
   String? existingImageUrl;
+  bool _isSaving = false;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -155,317 +156,359 @@ class _AddMemberState extends State<AddMember> {
     return AuthRequired(
       child: Scaffold(
         backgroundColor: Colors.grey[200],
-        body: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-
-              // Photo de profil
-              photoDeProfile(),
-
-              // Formulaire
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Form(
-                  key: _formKey,
+        body: Stack(
+          children: [
+            AbsorbPointer(
+              absorbing: _isSaving,
+              child: SingleChildScrollView(
+                child: Opacity(
+                  opacity: _isSaving ? 0.6 : 1.0,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Nom
-                      FieldWidget(
-                        obscureText: false,
-                        labelText: "Nom",
-                        icon: Icons.person,
-                        controller: nomController,
-                        validator: (p0) =>
-                            p0 == null || p0.isEmpty ? "Nom requis" : null,
-                      ),
+                      const SizedBox(height: 20),
 
-                      // Prénom
-                      FieldWidget(
-                        obscureText: false,
-                        labelText: "Prénom",
-                        icon: Icons.person,
-                        controller: prenomController,
-                        validator: (p0) =>
-                            p0 == null || p0.isEmpty ? "Prénom requis" : null,
-                      ),
+                      // Photo de profil
+                      photoDeProfile(),
 
-                      // Téléphone
-                      FieldWidget(
-                        obscureText: false,
-                        labelText: "Téléphone",
-                        icon: Icons.phone,
-                        keyboardType: TextInputType.phone,
-                        controller: telephoneController,
-                        validator: (p0) => p0 == null || p0.isEmpty
-                            ? "Téléphone requis"
-                            : null,
-                      ),
+                      // Formulaire
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              // Nom
+                              FieldWidget(
+                                obscureText: false,
+                                labelText: "Nom",
+                                icon: Icons.person,
+                                controller: nomController,
+                                validator: (p0) => p0 == null || p0.isEmpty
+                                    ? "Nom requis"
+                                    : null,
+                              ),
 
-                      // Email
-                      FieldWidget(
-                        obscureText: false,
-                        labelText: "Email",
-                        keyboardType: TextInputType.emailAddress,
-                        icon: Icons.email,
-                        controller: emailController,
-                        validator: (p0) =>
-                            p0 == null || p0.isEmpty ? "Email requis" : null,
-                      ),
+                              // Prénom
+                              FieldWidget(
+                                obscureText: false,
+                                labelText: "Prénom",
+                                icon: Icons.person,
+                                controller: prenomController,
+                                validator: (p0) => p0 == null || p0.isEmpty
+                                    ? "Prénom requis"
+                                    : null,
+                              ),
 
-                      // Facebook
-                      FieldWidget(
-                        obscureText: false,
-                        labelText: "Facebook",
-                        icon: Icons.facebook,
-                        controller: facebookController,
-                        validator: (p0) =>
-                            p0 == null || p0.isEmpty ? "Facebook requis" : null,
-                      ),
+                              // Téléphone
+                              FieldWidget(
+                                obscureText: false,
+                                labelText: "Téléphone",
+                                icon: Icons.phone,
+                                keyboardType: TextInputType.phone,
+                                controller: telephoneController,
+                                validator: (p0) => p0 == null || p0.isEmpty
+                                    ? "Téléphone requis"
+                                    : null,
+                              ),
 
-                      // Date et Lieu de naissance
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                              child: DatepickerWidget(
-                            labelText: "Date de naissance",
-                            onDateSelected: (DateTime date) {
-                              setState(() {
-                                dateDeNaissance = date;
-                              });
-                            },
-                          )),
-                          Expanded(
-                            child: FieldWidget(
-                              obscureText: false,
-                              labelText: "Lieu de naissance",
-                              icon: Icons.place,
-                              controller: lieuController,
-                              validator: (p0) => p0 == null || p0.isEmpty
-                                  ? "Lieu requis"
-                                  : null,
-                            ),
+                              // Email
+                              FieldWidget(
+                                obscureText: false,
+                                labelText: "Email",
+                                keyboardType: TextInputType.emailAddress,
+                                icon: Icons.email,
+                                controller: emailController,
+                                validator: (p0) => p0 == null || p0.isEmpty
+                                    ? "Email requis"
+                                    : null,
+                              ),
+
+                              // Facebook
+                              FieldWidget(
+                                obscureText: false,
+                                labelText: "Facebook",
+                                icon: Icons.facebook,
+                                controller: facebookController,
+                                validator: (p0) => p0 == null || p0.isEmpty
+                                    ? "Facebook requis"
+                                    : null,
+                              ),
+
+                              // Date et Lieu de naissance
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                      child: DatepickerWidget(
+                                    labelText: "Date de naissance",
+                                    onDateSelected: (DateTime date) {
+                                      setState(() {
+                                        dateDeNaissance = date;
+                                      });
+                                    },
+                                  )),
+                                  Expanded(
+                                    child: FieldWidget(
+                                      obscureText: false,
+                                      labelText: "Lieu de naissance",
+                                      icon: Icons.place,
+                                      controller: lieuController,
+                                      validator: (p0) =>
+                                          p0 == null || p0.isEmpty
+                                              ? "Lieu requis"
+                                              : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              // Etablissement
+                              DropdownWidget(
+                                dropdownLabel: 'Etablissement',
+                                jsonFileOption: 'etablissement',
+                                jsonFilePath: 'assets/json/etablissement.json',
+                                initialValue: selectedEtablissement,
+                                onValueChanged: (value) {
+                                  setState(() {
+                                    selectedEtablissement = value;
+                                  });
+                                },
+                              ),
+
+                              // Parcours et Niveau
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: DropdownWidget(
+                                      dropdownLabel: 'Mention',
+                                      jsonFileOption: 'mention',
+                                      jsonFilePath: 'assets/json/mention.json',
+                                      initialValue: selectedMention,
+                                      onValueChanged: (value) {
+                                        setState(() {
+                                          selectedMention = value;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: DropdownWidget(
+                                      dropdownLabel: 'Niveau',
+                                      jsonFileOption: 'niveau',
+                                      jsonFilePath: 'assets/json/niveau.json',
+                                      initialValue: selectedNiveau,
+                                      onValueChanged: (value) {
+                                        setState(() {
+                                          selectedNiveau = value;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              // Adresse
+                              FieldWidget(
+                                obscureText: false,
+                                labelText: "Adresse",
+                                icon: Icons.location_city,
+                                controller: adresseController,
+                                validator: (p0) => p0 == null || p0.isEmpty
+                                    ? "Adresse requise"
+                                    : null,
+                              ),
+
+                              // Adresse et Quartier
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: DropdownWidget(
+                                      dropdownLabel: 'Quartier',
+                                      jsonFileOption: 'quartier',
+                                      jsonFilePath: 'assets/json/quartier.json',
+                                      initialValue: selectedQuartier,
+                                      onValueChanged: (value) {
+                                        setState(() {
+                                          selectedQuartier = value;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  Expanded(
+                                    // Sexe
+                                    child: DropdownWidget(
+                                      dropdownLabel: "Sexe",
+                                      jsonFileOption: 'sexe',
+                                      jsonFilePath: 'assets/json/sexe.json',
+                                      initialValue: selectedSexe,
+                                      onValueChanged: (value) {
+                                        setState(() {
+                                          selectedSexe = value;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              // Date d'entrée et église
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                      child: DatepickerWidget(
+                                    labelText: "Date d'entrée",
+                                    onDateSelected: (DateTime date) {
+                                      setState(() {
+                                        dateDentree = date;
+                                      });
+                                    },
+                                  )),
+                                  Expanded(
+                                    child: DropdownWidget(
+                                      dropdownLabel: "Eglise",
+                                      jsonFileOption: 'eglise',
+                                      jsonFilePath: 'assets/json/eglise.json',
+                                      initialValue: selectedEglise,
+                                      onValueChanged: (value) {
+                                        setState(() {
+                                          selectedEglise = value;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              // Rôle
+                              Column(
+                                children: [
+                                  RoleDropdownWidget(
+                                    initialValue: selectedCategory,
+                                    onCategorySelected: (category) {
+                                      setState(() {
+                                        selectedCategory = category;
+                                        //selectedRole = null;
+                                      });
+                                    },
+                                  ),
+                                  SubRoleDropdownWidget(
+                                    selectedCategory: selectedCategory,
+                                    initialValue: selectedRole,
+                                    onRoleSelected: (role) {
+                                      setState(() {
+                                        selectedRole = role;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+
+                              // Fiaviana (D'où venez-vous ?)
+                              FieldWidget(
+                                obscureText: false,
+                                labelText: "Fiaviana",
+                                icon: Icons.place_outlined,
+                                controller: fiavianaController,
+                                validator: (p0) => p0 == null || p0.isEmpty
+                                    ? "Fiaviana requis"
+                                    : null,
+                              ),
+
+                              // Mpandray et Sampana
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: DropdownWidget(
+                                      dropdownLabel: 'Mpandray',
+                                      jsonFileOption: 'mpandray',
+                                      jsonFilePath: 'assets/json/mpandray.json',
+                                      initialValue: selectedMpandray,
+                                      onValueChanged: (value) {
+                                        setState(() {
+                                          selectedMpandray = value;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  Expanded(
+                                    // Réception
+                                    child: DropdownWidget(
+                                      dropdownLabel: 'Réception',
+                                      jsonFileOption: 'reception',
+                                      jsonFilePath:
+                                          'assets/json/reception.json',
+                                      initialValue: selectedReception,
+                                      onValueChanged: (value) {
+                                        setState(() {
+                                          selectedReception = value;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              // Sampana
+                              DropdownWidget(
+                                dropdownLabel: 'Sampana',
+                                jsonFileOption: 'sampana',
+                                jsonFilePath: 'assets/json/sampana.json',
+                                initialValue: selectedSampana,
+                                onValueChanged: (value) {
+                                  setState(() {
+                                    selectedSampana = value;
+                                  });
+                                },
+                              ),
+
+                              // Specialité
+                              FieldWidget(
+                                obscureText: false,
+                                labelText: "Talenta",
+                                icon: Icons.format_align_center,
+                                controller: talentaController,
+                                validator: (p0) => p0 == null || p0.isEmpty
+                                    ? "Talenta requis"
+                                    : null,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-
-                      // Etablissement
-                      DropdownWidget(
-                        dropdownLabel: 'Etablissement',
-                        jsonFileOption: 'etablissement',
-                        jsonFilePath: 'assets/json/etablissement.json',
-                        initialValue: selectedEtablissement,
-                        onValueChanged: (value) {
-                          setState(() {
-                            selectedEtablissement = value;
-                          });
-                        },
-                      ),
-
-                      // Parcours et Niveau
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: DropdownWidget(
-                              dropdownLabel: 'Mention',
-                              jsonFileOption: 'mention',
-                              jsonFilePath: 'assets/json/mention.json',
-                              initialValue: selectedMention,
-                              onValueChanged: (value) {
-                                setState(() {
-                                  selectedMention = value;
-                                });
-                              },
-                            ),
-                          ),
-                          Expanded(
-                            child: DropdownWidget(
-                              dropdownLabel: 'Niveau',
-                              jsonFileOption: 'niveau',
-                              jsonFilePath: 'assets/json/niveau.json',
-                              initialValue: selectedNiveau,
-                              onValueChanged: (value) {
-                                setState(() {
-                                  selectedNiveau = value;
-                                });
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Adresse
-                      FieldWidget(
-                        obscureText: false,
-                        labelText: "Adresse",
-                        icon: Icons.location_city,
-                        controller: adresseController,
-                        validator: (p0) =>
-                            p0 == null || p0.isEmpty ? "Adresse requise" : null,
-                      ),
-
-                      // Adresse et Quartier
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: DropdownWidget(
-                              dropdownLabel: 'Quartier',
-                              jsonFileOption: 'quartier',
-                              jsonFilePath: 'assets/json/quartier.json',
-                              initialValue: selectedQuartier,
-                              onValueChanged: (value) {
-                                setState(() {
-                                  selectedQuartier = value;
-                                });
-                              },
-                            ),
-                          ),
-                          Expanded(
-                            // Sexe
-                            child: DropdownWidget(
-                              dropdownLabel: "Sexe",
-                              jsonFileOption: 'sexe',
-                              jsonFilePath: 'assets/json/sexe.json',
-                              initialValue: selectedSexe,
-                              onValueChanged: (value) {
-                                setState(() {
-                                  selectedSexe = value;
-                                });
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Date d'entrée et église
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                              child: DatepickerWidget(
-                            labelText: "Date d'entrée",
-                            onDateSelected: (DateTime date) {
-                              setState(() {
-                                dateDentree = date;
-                              });
-                            },
-                          )),
-                          Expanded(
-                            child: DropdownWidget(
-                              dropdownLabel: "Eglise",
-                              jsonFileOption: 'eglise',
-                              jsonFilePath: 'assets/json/eglise.json',
-                              initialValue: selectedEglise,
-                              onValueChanged: (value) {
-                                setState(() {
-                                  selectedEglise = value;
-                                });
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Rôle
-                      Column(
-                        children: [
-                          RoleDropdownWidget(
-                            initialValue: selectedCategory,
-                            onCategorySelected: (category) {
-                              setState(() {
-                                selectedCategory = category;
-                                //selectedRole = null;
-                              });
-                            },
-                          ),
-                          SubRoleDropdownWidget(
-                            selectedCategory: selectedCategory,
-                            initialValue: selectedRole,
-                            onRoleSelected: (role) {
-                              setState(() {
-                                selectedRole = role;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-
-                      // Fiaviana (D'où venez-vous ?)
-                      FieldWidget(
-                        obscureText: false,
-                        labelText: "Fiaviana",
-                        icon: Icons.place_outlined,
-                        controller: fiavianaController,
-                        validator: (p0) =>
-                            p0 == null || p0.isEmpty ? "Fiaviana requis" : null,
-                      ),
-
-                      // Mpandray et Sampana
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: DropdownWidget(
-                              dropdownLabel: 'Mpandray',
-                              jsonFileOption: 'mpandray',
-                              jsonFilePath: 'assets/json/mpandray.json',
-                              initialValue: selectedMpandray,
-                              onValueChanged: (value) {
-                                setState(() {
-                                  selectedMpandray = value;
-                                });
-                              },
-                            ),
-                          ),
-                          Expanded(
-                            // Réception
-                            child: DropdownWidget(
-                              dropdownLabel: 'Réception',
-                              jsonFileOption: 'reception',
-                              jsonFilePath: 'assets/json/reception.json',
-                              initialValue: selectedReception,
-                              onValueChanged: (value) {
-                                setState(() {
-                                  selectedReception = value;
-                                });
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Sampana
-                      DropdownWidget(
-                        dropdownLabel: 'Sampana',
-                        jsonFileOption: 'sampana',
-                        jsonFilePath: 'assets/json/sampana.json',
-                        initialValue: selectedSampana,
-                        onValueChanged: (value) {
-                          setState(() {
-                            selectedSampana = value;
-                          });
-                        },
-                      ),
-
-                      // Specialité
-                      FieldWidget(
-                        obscureText: false,
-                        labelText: "Talenta",
-                        icon: Icons.format_align_center,
-                        controller: talentaController,
-                        validator: (p0) =>
-                            p0 == null || p0.isEmpty ? "Talenta requis" : null,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+            if (_isSaving)
+              Container(
+                color: Colors.black26,
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        color: Color(0xFF52575D),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'Sauvegarde en cours...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
 
         // Bouton d'ajout
@@ -594,6 +637,10 @@ class _AddMemberState extends State<AddMember> {
         throw Exception('Form validation failed');
       }
 
+      setState(() {
+        _isSaving = true;
+      });
+
       // Show loading indicator
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -664,6 +711,10 @@ class _AddMemberState extends State<AddMember> {
       if (mounted) {
         _resetForm();
 
+        setState(() {
+          _isSaving = false;
+        });
+
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -681,6 +732,9 @@ class _AddMemberState extends State<AddMember> {
       }
     } catch (error) {
       if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
         debugPrint('Erreur: $error');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
