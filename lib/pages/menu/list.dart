@@ -114,7 +114,24 @@ class _DisplayState extends State<Display> {
         ),
         Expanded(
           child: users.isEmpty
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                  child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.group_off_sharp,
+                      size: 50,
+                      color: Colors.grey,
+                    ),
+                    TextWidget(
+                      label: "Aucun membre trouvé.",
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                    ),
+                  ],
+                ))
               : ListView.builder(
                   itemCount: filteredUsers.length,
                   itemBuilder: (context, index) {
