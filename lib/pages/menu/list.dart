@@ -23,7 +23,7 @@ class _DisplayState extends State<Display> {
       final response = await supabase.from('users').select();
       setState(() {
         users = List<Map<String, dynamic>>.from(response);
-        filteredUsers = users; // Initialize filtered users with all users
+        filteredUsers = users;
       });
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -49,8 +49,12 @@ class _DisplayState extends State<Display> {
 
       // Delete image
       if (imageUrl != null) {
-        final imagePath = imageUrl.split("/").last;
-        await supabase.storage.from('images').remove([imagePath]);
+        // Extraire directement le nom du fichier à partir de l'URL
+        final uri = Uri.parse(imageUrl);
+        final fileName = uri.pathSegments
+            .last; // Ceci donnera directement "1738788978269_1738788978269.jpg.jpg"
+
+        await supabase.storage.from('images').remove([fileName]);
       }
 
       // Refresh user list
@@ -210,7 +214,7 @@ class _DisplayState extends State<Display> {
                                         TextButton(
                                           onPressed: () {
                                             deleteUser(user['telephone'],
-                                                user['profile_imasge_url']);
+                                                user['profile_image_url']);
                                             Navigator.pop(context);
                                           },
                                           child: TextWidget(

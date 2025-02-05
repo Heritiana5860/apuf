@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path/path.dart' as p;
 
 class AddMember extends StatefulWidget {
   const AddMember({super.key, this.memberToEdit, this.onSave});
@@ -88,7 +89,7 @@ class _AddMemberState extends State<AddMember> {
   @override
   void initState() {
     super.initState();
-    
+
     if (widget.memberToEdit != null) {
       isEditing = true;
       _initializeEditData();
@@ -489,45 +490,41 @@ class _AddMemberState extends State<AddMember> {
 
   GestureDetector photoDeProfile() {
     return GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                width: 130,
-                height: 130,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey[300]!, width: 3),
-                  color: Colors.grey[200],
-                ),
-                child: ClipOval(
-                  child: _image != null
-                      ? Image.file(_image!,
-                          fit: BoxFit.cover, width: 130, height: 130)
-                      : (existingImageUrl != null &&
-                              existingImageUrl!.isNotEmpty
-                          ? Image.network(
-                              existingImageUrl!,
-                              fit: BoxFit.cover,
-                              width: 130,
-                              height: 130,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                    child: CircularProgressIndicator());
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey[200],
-                                  child: Icon(Icons.add_a_photo_rounded,
-                                      size: 50, color: Colors.grey[800]),
-                                );
-                              },
-                            )
-                          : Icon(Icons.add_a_photo_rounded,
-                              size: 50, color: Colors.grey[800])),
-                ),
-              ),
-            );
+      onTap: _pickImage,
+      child: Container(
+        width: 130,
+        height: 130,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.grey[300]!, width: 3),
+          color: Colors.grey[200],
+        ),
+        child: ClipOval(
+          child: _image != null
+              ? Image.file(_image!, fit: BoxFit.cover, width: 130, height: 130)
+              : (existingImageUrl != null && existingImageUrl!.isNotEmpty
+                  ? Image.network(
+                      existingImageUrl!,
+                      fit: BoxFit.cover,
+                      width: 130,
+                      height: 130,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(child: CircularProgressIndicator());
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: Icon(Icons.add_a_photo_rounded,
+                              size: 50, color: Colors.grey[800]),
+                        );
+                      },
+                    )
+                  : Icon(Icons.add_a_photo_rounded,
+                      size: 50, color: Colors.grey[800])),
+        ),
+      ),
+    );
   }
 
   void _resetForm() {
@@ -564,8 +561,8 @@ class _AddMemberState extends State<AddMember> {
   Future<String?> uploadImage(File imageFile, String userId) async {
     try {
       // Create a unique file name using user ID and timestamp
-      final fileExt = imageFile.path.split('.').last;
-      final fileName = '$userId.$fileExt';
+      final fileExt = p.extension(imageFile.path);
+      final fileName = '$userId$fileExt';
       final bucketName = 'images';
 
       // Upload the image
