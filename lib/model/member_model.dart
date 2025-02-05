@@ -16,6 +16,7 @@ class MemberModel {
   final DateTime dateEntree;
   final String? eglise;
   final String? role;
+  final String? category;
   final String fiaviana;
   final String? mpandray;
   final String? reception;
@@ -41,6 +42,7 @@ class MemberModel {
     required this.dateEntree,
     this.eglise,
     this.role,
+    this.category,
     required this.fiaviana,
     this.mpandray,
     this.reception,
@@ -69,6 +71,7 @@ class MemberModel {
       'date_entree': dateEntree.toIso8601String(),
       'eglise': eglise,
       'role': role,
+      'category': category,
       'fiaviana': fiaviana,
       'mpandray': mpandray,
       'reception': reception,
@@ -98,6 +101,7 @@ class MemberModel {
       dateEntree: DateTime.parse(json['date_entree']),
       eglise: json['eglise'],
       role: json['role'],
+      category: json['category'],
       fiaviana: json['fiaviana'],
       mpandray: json['mpandray'],
       reception: json['reception'],
@@ -126,6 +130,7 @@ class MemberModel {
     DateTime? dateEntree,
     String? eglise,
     String? role,
+    String? category,
     String? fiaviana,
     String? mpandray,
     String? reception,
@@ -151,6 +156,7 @@ class MemberModel {
       dateEntree: dateEntree ?? this.dateEntree,
       eglise: eglise ?? this.eglise,
       role: role ?? this.role,
+      category: category ?? this.category,
       fiaviana: fiaviana ?? this.fiaviana,
       mpandray: mpandray ?? this.mpandray,
       reception: reception ?? this.reception,

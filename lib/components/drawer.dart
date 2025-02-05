@@ -2,6 +2,7 @@ import 'package:app/components/list_tile.dart';
 import 'package:app/components/text.dart';
 import 'package:app/pages/home.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DrawerWidget extends StatelessWidget {
   const DrawerWidget({super.key, required this.onSelectPage});
@@ -46,10 +47,9 @@ class DrawerWidget extends StatelessWidget {
             onTap: () => onSelectPage(DrawerSelections.display),
           ),
           ListTileWidget(
-            label: 'Aide',
-            icon: Icons.help,
-            onTap: () => onSelectPage(DrawerSelections.help)
-          ),
+              label: 'Aide',
+              icon: Icons.help,
+              onTap: () => onSelectPage(DrawerSelections.help)),
           ListTileWidget(
             label: 'Paramètre',
             icon: Icons.settings,
@@ -58,6 +58,25 @@ class DrawerWidget extends StatelessWidget {
           ListTileWidget(
             label: 'Deconnexion',
             icon: Icons.logout_outlined,
+            onTap: () async {
+              try {
+                // Get the Supabase client instance
+                final supabase = Supabase.instance.client;
+
+                // Perform the sign-out operation
+                await supabase.auth.signOut();
+
+                // Optionally, navigate the user back to the login screen or home page
+                Navigator.of(context).pushReplacementNamed('/login');
+              } catch (error) {
+                // Handle any errors that occur during sign-out
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erreur lors de la déconnexion : $error'),
+                  ),
+                );
+              }
+            },
           ),
         ],
       ),

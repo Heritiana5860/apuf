@@ -40,7 +40,7 @@ class _HomeState extends State<Home> {
     if (currentPage == DrawerSelections.addMember) {
       body = AddMember(memberToEdit: memberToEdit, onSave: () {
         setState(() {
-          memberToEdit = null; // Reset after saving
+          memberToEdit = null;
         });
       });
     } else if (currentPage == DrawerSelections.display) {

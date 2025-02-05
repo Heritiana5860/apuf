@@ -24,6 +24,7 @@ class _AddMemberState extends State<AddMember> {
   File? _image;
   final _formKey = GlobalKey<FormState>();
   String? selectedCategory;
+  String? selectedRole;
   final supabase = Supabase.instance.client;
   bool isEditing = false;
   String? existingImageUrl;
@@ -87,7 +88,7 @@ class _AddMemberState extends State<AddMember> {
   @override
   void initState() {
     super.initState();
-    // Initialize controllers with existing data if editing
+    
     if (widget.memberToEdit != null) {
       isEditing = true;
       _initializeEditData();
@@ -133,7 +134,7 @@ class _AddMemberState extends State<AddMember> {
       selectedMpandray = member['mpandray'];
       selectedReception = member['reception'];
       selectedSampana = member['sampana'];
-      selectedCategory = member['role'];
+      selectedRole = member['category'];
       selectedCategory = member['role'];
       existingImageUrl = member['profile_image_url'];
     });
@@ -160,46 +161,7 @@ class _AddMemberState extends State<AddMember> {
               const SizedBox(height: 20),
 
               // Photo de profil
-              GestureDetector(
-                onTap: _pickImage,
-                child: Container(
-                  width: 130,
-                  height: 130,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey[300]!, width: 3),
-                    color: Colors.grey[200],
-                  ),
-                  child: ClipOval(
-                    child: _image != null
-                        ? Image.file(_image!,
-                            fit: BoxFit.cover, width: 130, height: 130)
-                        : (existingImageUrl != null &&
-                                existingImageUrl!.isNotEmpty
-                            ? Image.network(
-                                existingImageUrl!,
-                                fit: BoxFit.cover,
-                                width: 130,
-                                height: 130,
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(
-                                      child: CircularProgressIndicator());
-                                },
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: Colors.grey[200],
-                                    child: Icon(Icons.person,
-                                        size: 50, color: Colors.grey[800]),
-                                  );
-                                },
-                              )
-                            : Icon(Icons.add_a_photo_rounded,
-                                size: 50, color: Colors.grey[800])),
-                  ),
-                ),
-              ),
+              photoDeProfile(),
 
               // Formulaire
               Padding(
@@ -415,11 +377,18 @@ class _AddMemberState extends State<AddMember> {
                             onCategorySelected: (category) {
                               setState(() {
                                 selectedCategory = category;
+                                //selectedRole = null;
                               });
                             },
                           ),
                           SubRoleDropdownWidget(
                             selectedCategory: selectedCategory,
+                            initialValue: selectedRole,
+                            onRoleSelected: (role) {
+                              setState(() {
+                                selectedRole = role;
+                              });
+                            },
                           ),
                         ],
                       ),
@@ -518,6 +487,49 @@ class _AddMemberState extends State<AddMember> {
     );
   }
 
+  GestureDetector photoDeProfile() {
+    return GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey[300]!, width: 3),
+                  color: Colors.grey[200],
+                ),
+                child: ClipOval(
+                  child: _image != null
+                      ? Image.file(_image!,
+                          fit: BoxFit.cover, width: 130, height: 130)
+                      : (existingImageUrl != null &&
+                              existingImageUrl!.isNotEmpty
+                          ? Image.network(
+                              existingImageUrl!,
+                              fit: BoxFit.cover,
+                              width: 130,
+                              height: 130,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[200],
+                                  child: Icon(Icons.add_a_photo_rounded,
+                                      size: 50, color: Colors.grey[800]),
+                                );
+                              },
+                            )
+                          : Icon(Icons.add_a_photo_rounded,
+                              size: 50, color: Colors.grey[800])),
+                ),
+              ),
+            );
+  }
+
   void _resetForm() {
     setState(() {
       _image = null;
@@ -592,17 +604,23 @@ class _AddMemberState extends State<AddMember> {
         );
       }
 
-      String? imageUrl;
+      String? imageUrl = widget.memberToEdit?['profile_image_url'];
 
-      // Handle image upload for new image
+      // Vérifier si une nouvelle image est sélectionnée
       if (_image != null) {
-        final userId = isEditing
-            ? widget.memberToEdit!['telephone']
-            : DateTime.now().millisecondsSinceEpoch.toString();
-        imageUrl = await uploadImage(_image!, userId);
-      } else if (isEditing) {
-        // Keep existing image URL if editing and no new image selected
-        imageUrl = widget.memberToEdit!['profile_image_url'];
+        final userId = widget.memberToEdit?['telephone'] ??
+            DateTime.now().millisecondsSinceEpoch.toString();
+        final fileExt = _image!.path.split('.').last;
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final newFileName = '${userId}_$timestamp.$fileExt';
+
+        // Supprimer l'ancienne image si elle existe
+        if (isEditing && imageUrl != null) {
+          await deleteOldImage(imageUrl);
+        }
+
+        // Uploader la nouvelle image avec le nouveau nom
+        imageUrl = await uploadImage(_image!, newFileName);
       }
 
       // Prepare member data
@@ -626,6 +644,7 @@ class _AddMemberState extends State<AddMember> {
         sexe: selectedSexe,
         eglise: selectedEglise,
         role: selectedCategory,
+        category: selectedRole,
         mpandray: selectedMpandray,
         reception: selectedReception,
         sampana: selectedSampana,
@@ -638,6 +657,8 @@ class _AddMemberState extends State<AddMember> {
             .from('users')
             .update(member.toJson())
             .eq('telephone', widget.memberToEdit!['telephone']);
+        isEditing = false;
+        _image = null;
       } else {
         // Insert new record
         await supabase.from('users').insert(member.toJson());
@@ -660,11 +681,6 @@ class _AddMemberState extends State<AddMember> {
         if (widget.onSave != null) {
           widget.onSave!();
         }
-
-        // Navigate back after editing
-        if (isEditing) {
-          Navigator.of(context).pop();
-        }
       }
     } catch (error) {
       if (mounted) {
@@ -676,6 +692,20 @@ class _AddMemberState extends State<AddMember> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> deleteOldImage(String imageUrl) async {
+    try {
+      const bucketName = 'images';
+
+      // Extraire le nom du fichier à partir de l'URL publique
+      final uri = Uri.parse(imageUrl);
+      final fileName = uri.pathSegments.last;
+
+      await supabase.storage.from(bucketName).remove([fileName]);
+    } catch (e) {
+      debugPrint("Erreur lors de la suppression de l'image: $e");
     }
   }
 }

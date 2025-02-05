@@ -1,5 +1,5 @@
 import 'package:app/components/field.dart';
-import 'package:app/pages/menu/add.dart';
+import 'package:app/components/text.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -21,35 +21,40 @@ class _DisplayState extends State<Display> {
     try {
       final supabase = Supabase.instance.client;
       final response = await supabase.from('users').select();
-      final fetchedUsers = List<Map<String, dynamic>>.from(response);
-
       setState(() {
-        users = fetchedUsers;
-        filteredUsers = fetchedUsers;
+        users = List<Map<String, dynamic>>.from(response);
+        filteredUsers = users; // Initialize filtered users with all users
       });
     } catch (error) {
-      debugPrint('Error fetching users: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text('Erreur lors du chargement des utilisateurs : $error')),
+      );
     }
   }
 
   Future<void> deleteUser(String telephone, String? imageUrl) async {
     try {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Suppresion en cours...')),
-        );
-      }
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Suppression en cours...')),
+      );
 
       final supabase = Supabase.instance.client;
-      // delete textual data
+
+      // Delete textual data
       await supabase.from('users').delete().eq('telephone', telephone);
 
-      // delete image
-      final imagePath = imageUrl!.split("/").last;
-      debugPrint('imagePath: $imagePath');
-      await supabase.storage.from('images').remove([imagePath]);
+      // Delete image
+      if (imageUrl != null) {
+        final imagePath = imageUrl.split("/").last;
+        await supabase.storage.from('images').remove([imagePath]);
+      }
 
-      fetchUsers();
+      // Refresh user list
+      await fetchUsers();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -58,7 +63,9 @@ class _DisplayState extends State<Display> {
         ),
       );
     } catch (e) {
-      debugPrint('Error delete: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la suppression : $e')),
+      );
     }
   }
 
@@ -67,12 +74,12 @@ class _DisplayState extends State<Display> {
       filteredUsers = users.where((user) {
         final prenom = user['prenom']?.toString().toLowerCase() ?? '';
         final nom = user['nom']?.toString().toLowerCase() ?? '';
-        final numero = user["telephone"] ?? '';
+        final numero = user["telephone"]?.toString() ?? '';
         final mention = user["mention"]?.toString().toLowerCase() ?? '';
         final quartier = user["quartier"]?.toString().toLowerCase() ?? '';
         return prenom.contains(query.toLowerCase()) ||
             nom.contains(query.toLowerCase()) ||
-            numero.contains(query) ||
+            numero.contains(query.toLowerCase()) ||
             mention.contains(query.toLowerCase()) ||
             quartier.contains(query.toLowerCase());
       }).toList();
@@ -112,85 +119,97 @@ class _DisplayState extends State<Display> {
                   itemCount: filteredUsers.length,
                   itemBuilder: (context, index) {
                     final user = filteredUsers[index];
-                    return ListTile(
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              widget.onEdit(user);
-                            },
-                            icon: Icon(
-                              Icons.edit,
-                              color: Colors.blue[300],
-                            ),
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 5, horizontal: 10),
+                      elevation: 0,
+                      child: ListTile(
+                        leading: ClipOval(
+                          child: SizedBox(
+                            width: 50,
+                            height: 50,
+                            child: user['profile_image_url'] != null
+                                ? Image.network(
+                                    user['profile_image_url'],
+                                    fit: BoxFit.cover,
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(
+                                          child: CircularProgressIndicator());
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[300],
+                                        child: const Icon(Icons.person),
+                                      );
+                                    },
+                                  )
+                                : Container(
+                                    color: Colors.grey[300],
+                                    child: const Icon(Icons.person),
+                                  ),
                           ),
-                          IconButton(
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    title: Text('Confirmer la suppression'),
-                                    content: Text(
-                                        'Voulez-vous vraiment supprimer cet utilisateur ?'),
-                                    actions: [
-                                      TextButton(
-                                        child: Text('Annuler'),
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                      TextButton(
-                                        child: Text('Supprimer'),
-                                        onPressed: () {
-                                          deleteUser(user['telephone'],
-                                              user['profile_image_url']);
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-                            icon: Icon(
-                              Icons.delete,
-                              color: Colors.red[300],
+                        ),
+                        title: Text(
+                          '${user['nom']} ${user['prenom']}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          "${user['telephone']} | ${user['adresse']}",
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () => widget.onEdit(user),
+                              icon: Icon(Icons.edit, color: Colors.blue[300]),
                             ),
-                          ),
-                        ],
-                      ),
-                      leading: ClipOval(
-                        child: SizedBox(
-                          width: 50,
-                          height: 50,
-                          child: user['profile_image_url'] != null
-                              ? Image.network(
-                                  user['profile_image_url'],
-                                  fit: BoxFit.cover,
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return const Center(
-                                        child: CircularProgressIndicator());
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.person),
+                            IconButton(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      shape: ContinuousRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(4)),
+                                      title: const TextWidget(
+                                          label: 'Confirmer la suppression'),
+                                      content: const TextWidget(
+                                          label:
+                                              'Voulez-vous vraiment supprimer cet utilisateur ?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const TextWidget(
+                                            label: 'Annuler',
+                                            color: Colors.black45,
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            deleteUser(user['telephone'],
+                                                user['profile_imasge_url']);
+                                            Navigator.pop(context);
+                                          },
+                                          child: TextWidget(
+                                              label: 'Supprimer',
+                                              color: Colors.red),
+                                        ),
+                                      ],
                                     );
                                   },
-                                )
-                              : Container(
-                                  color: Colors.grey[300],
-                                  child: const Icon(Icons.person),
-                                ),
+                                );
+                              },
+                              icon: Icon(Icons.delete, color: Colors.red[300]),
+                            ),
+                          ],
                         ),
                       ),
-                      title: Text('${user['nom']} ${user['prenom']}'),
-                      subtitle:
-                          Text("${user['telephone']} | ${user['adresse']}"),
                     );
                   },
                 ),

@@ -116,7 +116,7 @@ class _LoginState extends State<Login> {
                         Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: horizontalPadding,
-                            vertical: verticalPadding * 0.5,
+                            vertical: verticalPadding * 0.3,
                           ),
                           child: FieldWidget(
                             controller: _emailController,
@@ -142,7 +142,7 @@ class _LoginState extends State<Login> {
                         Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: horizontalPadding,
-                            vertical: verticalPadding * 0.5,
+                            vertical: verticalPadding * 0.3,
                           ),
                           child: FieldWidget(
                             controller: _passwordController,
