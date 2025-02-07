@@ -43,6 +43,14 @@ dependencies:
   supabase_auth_ui: ^0.5.4
   flutter_dotenv: ^5.2.1
   path: ^1.8.2
+  connectivity_plus: ^6.1.2
+  lottie: ^3.3.1
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/img/logoapu.jpeg"
 
 dev_dependencies:
   flutter_test:

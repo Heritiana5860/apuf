@@ -1,5 +1,6 @@
 import 'package:app/pages/home.dart';
 import 'package:app/pages/login.dart';
+import 'package:app/pages/no_connection.dart';
 import 'package:app/pages/splash.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const Splash(),
         '/login': (context) => const Login(),
         '/home': (context) => const Home(),
+        '/no_connection': (context) => NoConnection(),
       },
     );
   }

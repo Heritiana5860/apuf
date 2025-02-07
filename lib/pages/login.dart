@@ -52,8 +52,9 @@ class _LoginState extends State<Login> {
         debugPrint(error.toString());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            
-            content: TextWidget(label: "Compte invalide!",),
+            content: TextWidget(
+              label: "Compte invalide!",
+            ),
             backgroundColor: Colors.red,
           ),
         );
